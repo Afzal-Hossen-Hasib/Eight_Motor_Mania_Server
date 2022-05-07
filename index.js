@@ -11,6 +11,16 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+function verifyJWT (req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({message: 'Access Denied'})
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.JWT_TOKEN_SECRET, )
+  console.log('inside verifyJWT', authHeader); 
+  next();
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.1v2bc.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -50,7 +60,7 @@ async function run() {
             res.send(result);
           });
 
-          app.get('/myitem', async(req, res) => {
+          app.get('/myitem', verifyJWT, async(req, res) => {
             const email = req.query.email;
             const query = {email: email};
             const cursor = inventoryCollection.find(query);
