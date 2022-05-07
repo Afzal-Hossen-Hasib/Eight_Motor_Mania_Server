@@ -17,8 +17,14 @@ function verifyJWT (req, res, next) {
     return res.status(401).send({message: 'Access Denied'})
   }
   const token = authHeader.split(' ')[1];
-  jwt.verify(token, process.env.JWT_TOKEN_SECRET, )
-  console.log('inside verifyJWT', authHeader); 
+  jwt.verify(token, process.env.JWT_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({message: 'Forbidden Access'}); 
+    }
+    console.log('Decoded', decoded); 
+    req.decoded = decoded;
+  })
+ 
   next();
 }
 
@@ -61,11 +67,17 @@ async function run() {
           });
 
           app.get('/myitem', verifyJWT, async(req, res) => {
+            const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            const query = {email: email};
-            const cursor = inventoryCollection.find(query);
-            const addItem = await cursor.toArray();
-            res.send(addItem);
+            if (email === decodedEmail) {
+              const query = {email: email};
+              const cursor = inventoryCollection.find(query);
+              const addItem = await cursor.toArray();
+              res.send(addItem);
+            } 
+            else {
+              res.status(403).send({message: 'Forbidden Access'}); 
+            }
           }) 
 
           app.post('/inventory', async(req, res) => {
